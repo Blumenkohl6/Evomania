@@ -68,14 +68,14 @@ function updatePlayerPosition() {
     const newY = player.y + moveY;
 
     // Prüfe Kollisionen
-    const tileX = Math.floor(newX / tileSize);
-    const tileY = Math.floor(newY / tileSize);
+    const tileX = newX / tileSize - 4;
+    const tileY = newY / tileSize - 3;
     const tileType = generateTile(tileX, tileY);
 
     if (tileType !== 'mountain' && tileType !== 'water') {
         player.x = newX;
         player.y = newY;
-    }
+    } else player.speed = 0;
 }
 
 // Details und ihre Bilder
