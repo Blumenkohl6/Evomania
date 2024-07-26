@@ -1,8 +1,11 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const tileSize = 26; // Tile-Größe
-const stepSize = 4; // Schrittgröße
+const amplitude = 1;
+const frequency = 0.5;
 const seed = Math.random(); // Zufälliger Seed
+
+let animationIndex = 0;
 
 // Set high resolution for canvas
 const scale = 2; // Adjust scale factor as needed
@@ -13,7 +16,16 @@ ctx.scale(scale, scale);
 const simplex = new SimplexNoise(seed);
 
 // Spielerposition (als Fließkommazahlen)
-let player = { x: canvas.width / 2 / scale, y: canvas.height / 2 / scale }; // Startposition in der Mitte des Canvas
+let player = {
+    x: canvas.width / 2 / scale,
+    y: canvas.height / 2 / scale,
+    width: tileSize * 1.5,
+    height: tileSize * 3,
+    speed: 0,
+    maxSpeed: 4,
+    acceleration: 0.2,
+    direction: 'down'
+}; // Startposition in der Mitte des Canvas
 
 // Bewegung des Spielers
 const keys = {};
@@ -31,10 +43,25 @@ function updatePlayerPosition() {
 
     // Normiere den Vektor, wenn es eine diagonale Bewegung gibt
     if (moveX !== 0 || moveY !== 0) {
+        if (player.speed < player.maxSpeed) player.speed += player.acceleration;
+
+        if (moveY < 0 && moveX < 0) player.direction = 'left-up';
+        else if (moveY > 0 && moveX > 0) player.direction = 'right-down';
+        else if (moveX < 0 && moveY > 0) player.direction = 'left-down';
+        else if (moveX > 0 && moveY < 0) player.direction = 'right-up';
+        else if (moveY > 0) player.direction = 'down';
+        else if (moveY < 0) player.direction = 'up';
+        else if (moveX < 0) player.direction = 'left';
+        else player.direction = 'right';
+
         const length = Math.sqrt(moveX * moveX + moveY * moveY);
-        moveX = (moveX / length) * stepSize;
-        moveY = (moveY / length) * stepSize;
+        moveX = (moveX / length) * player.speed;
+        moveY = (moveY / length) * player.speed;
+    } else {
+        player.speed = 0;
     }
+
+
 
     // Berechne neue Positionen
     const newX = player.x + moveX;
@@ -89,6 +116,43 @@ const detailImages = {
     'gold ore': '/assets/grafik/biome/mountain/gold_ore.png',
     'iron ore': '/assets/grafik/biome/mountain/iron_ore.png'
 };
+
+const entityImages = {
+    static: {},
+    moving: {
+        player: {
+            Up: 'assets/grafik/entities/moving/player/playerUp.png',
+            Down: 'assets/grafik/entities/moving/player/playerDown.png',
+            Left: 'assets/grafik/entities/moving/player/playerLeft.png',
+            Right: 'assets/grafik/entities/moving/player/playerRight.png',
+            LeftUp: 'assets/grafik/entities/moving/player/playerLeftUp.png',
+            LeftDown: 'assets/grafik/entities/moving/player/playerLeftDown.png',
+            RightUp: 'assets/grafik/entities/moving/player/playerRightUp.png',
+            RightDown: 'assets/grafik/entities/moving/player/playerRightDown.png',
+        }
+    }
+};
+
+const imageCache = {};
+
+function cacheImages(obj, parentPath = '') {
+    for (const [key, value] of Object.entries(obj)) {
+        const currentPath = parentPath ? `${parentPath}/${key}` : key;
+
+        if (typeof value === 'string' && value) {
+            // If value is a string and not empty, cache the image
+            const img = new Image();
+            img.src = value;
+            imageCache[currentPath] = img;
+        } else if (typeof value === 'object') {
+            // Recursively go deeper into the object
+            cacheImages(value, currentPath);
+        }
+    }
+}
+
+// Call the cacheImages function with the root entityImages object
+cacheImages(entityImages);
 
 const detailCache = {};
 
@@ -236,10 +300,45 @@ function drawMap() {
 }
 
 function drawPlayer() {
-    const playerScreenX = canvas.width / 2 / scale - tileSize / 2;
-    const playerScreenY = canvas.height / 2 / scale - tileSize / 2;
-    ctx.fillStyle = 'red';
-    ctx.fillRect(playerScreenX, playerScreenY, tileSize, tileSize);
+    let playerScreenX = canvas.width / 2 / scale - player.width / 2;
+    let playerScreenY = canvas.height / 2 / scale - player.height / 2;
+
+    let img;
+
+    animationIndex++;
+
+    if (player.speed !== 0) {
+        playerScreenY = playerScreenY + amplitude * Math.sin(frequency * animationIndex);
+    }
+
+    switch (player.direction) {
+        case 'up':
+            img = imageCache['moving/player/Up'];
+            break;
+        case 'down':
+            img = imageCache['moving/player/Down'];
+            break;
+        case 'left':
+            img = imageCache['moving/player/Left'];
+            break;
+        case 'right':
+            img = imageCache['moving/player/Right'];
+            break;
+        case 'left-up':
+            img = imageCache['moving/player/LeftUp'];
+            break;
+        case 'left-down':
+            img = imageCache['moving/player/LeftDown'];
+            break;
+        case 'right-up':
+            img = imageCache['moving/player/RightUp'];
+            break;
+        case 'right-down':
+            img = imageCache['moving/player/RightDown'];
+            break;
+    }
+
+    ctx.drawImage(img, playerScreenX, playerScreenY, player.width, player.height);
 }
 
 function gameLoop() {
