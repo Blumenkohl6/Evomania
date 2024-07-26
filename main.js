@@ -4,6 +4,7 @@ const tileSize = 26; // Tile-Größe
 const amplitude = 1;
 const frequency = 0.5;
 const seed = Math.random(); // Zufälliger Seed
+let status = 0;
 
 let animationIndex = 0;
 
@@ -31,6 +32,31 @@ let player = {
 const keys = {};
 window.addEventListener('keydown', (e) => { keys[e.key] = true; });
 window.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+function setup() {
+    readUrl();
+    preventSpawnTrap(true);
+}
+
+function preventSpawnTrap(first) {
+    const tileX = player.x / tileSize - 4;
+    const tileY = player.y / tileSize - 3;
+    const tileType = generateTile(tileX, tileY);
+
+    if (tileType == 'mountain' || tileType == 'water') {
+        player.x += 2;
+        player.y += 2;
+        preventSpawnTrap(false);
+    } else if (!first) {
+        player.x += (Math.floor(Math.random() * 6) + 3) * tileSize;
+        player.y += (Math.floor(Math.random() * 6) + 3) * tileSize;
+        preventSpawnTrap(true);
+    }
+}
+
+function readUrl() {}
+
+setup();
 
 function updatePlayerPosition() {
     let moveX = 0;
@@ -149,6 +175,7 @@ function cacheImages(obj, parentPath = '') {
             cacheImages(value, currentPath);
         }
     }
+    status++;
 }
 
 // Call the cacheImages function with the root entityImages object
@@ -162,6 +189,7 @@ function loadDetailImages() {
         img.src = src;
         detailCache[key] = img;
     }
+    status++;
 }
 
 loadDetailImages();
