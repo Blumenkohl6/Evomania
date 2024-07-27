@@ -1,6 +1,10 @@
 var md = new MobileDetect(window.navigator.userAgent);
 
-if (md.mobile()) {
+function isMobile() {
+    return md.mobile() !== null;
+}
+
+if (isMobile()) {
     document.getElementById('joystickContainer').classList.remove('hidden');
 
     var joystick = nipplejs.create({
