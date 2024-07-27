@@ -1,5 +1,8 @@
 function isMobile() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    var isTouchDevice = ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
+    return isTouchDevice && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
 }
 
 if (isMobile()) {
