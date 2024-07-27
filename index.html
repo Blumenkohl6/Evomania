@@ -10,9 +10,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.8.0/nipplejs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mobile-detect/1.4.5/mobile-detect.min.js"></script>
     <style>
-        body {
+        body,
+        html {
             margin: 0;
+            padding: 0;
             overflow: hidden;
+            /* Verhindert Scrollen, das unerwünschte Ränder erzeugen könnte */
         }
         
         canvas {
@@ -27,6 +30,10 @@
             left: 20px;
             width: 100px;
             height: 100px;
+            border: none;
+            /* Stellt sicher, dass der Container keine Ränder hat */
+            background: transparent;
+            /* Stellt sicher, dass der Hintergrund des Containers transparent ist */
         }
         
         #joystickContainer.hidden {

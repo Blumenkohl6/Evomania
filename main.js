@@ -1,7 +1,7 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const tileSize = 26; // Tile-Größe
-const amplitude = 1;
+const tileSize = 25; // Tile-Größe
+const amplitude = 1.5;
 const frequency = 0.5;
 const seed = Math.random(); // Zufälliger Seed
 let status = 0;
@@ -141,7 +141,7 @@ function spawnPlants() {
 function setup() {
     readUrl();
     preventSpawnTrap(true);
-    spawnPlants();
+    spawnPlants(); // Pflanzen spawnen, nachdem der Spieler positioniert wurde
 }
 
 function preventSpawnTrap(first) {
@@ -479,26 +479,14 @@ function drawPlayer() {
 }
 
 function drawPlants() {
-    const screenWidth = canvas.width / scale;
-    const screenHeight = canvas.height / scale;
-
     for (const plant of entities.plants) {
         if (plant instanceof BerryBush) {
-            const plantScreenX = plant.x - player.x + screenWidth / 2;
-            const plantScreenY = plant.y - player.y + screenHeight / 2;
-
-            // Überprüfe, ob die Pflanze im Sichtfeld des Spielers ist
-            if (plantScreenX + plant.width > 0 && plantScreenX < screenWidth &&
-                plantScreenY + plant.height > 0 && plantScreenY < screenHeight) {
-
-                if (plant.img.complete) {
-                    ctx.drawImage(plant.img, plantScreenX, plantScreenY, plant.width * tileSize, plant.height * tileSize);
-                }
-            }
+            const plantScreenX = plant.x - player.x + canvas.width / 2 / scale;
+            const plantScreenY = plant.y - player.y + canvas.height / 2 / scale;
+            ctx.drawImage(plant.img, plantScreenX * tileSize, plantScreenY / tileSize, plant.width / tileSize, plant.height * tileSize);
         }
     }
 }
-
 
 function gameLoop() {
     updatePlayerPosition();

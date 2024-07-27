@@ -11,7 +11,9 @@ if (isMobile()) {
         zone: document.getElementById('joystickContainer'),
         mode: 'static',
         position: { left: '50px', bottom: '50px' },
-        color: 'blue'
+        color: 'blue',
+        size: 100,
+        restOpacity: 0.8
     });
 
     joystick.on('move', function(evt, data) {
