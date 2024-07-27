@@ -1,9 +1,8 @@
 var md = new MobileDetect(window.navigator.userAgent);
 
 function isMobile() {
-    console.log(md.mobile());
-    console.log(md.tablet());
-    return md.mobile() !== null || md.tablet() !== null;
+    var isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
+    return (md.mobile() !== null || md.tablet() !== null) || isTouchDevice;
 }
 
 if (isMobile()) {
