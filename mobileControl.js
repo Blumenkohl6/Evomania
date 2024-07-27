@@ -1,20 +1,12 @@
-function isMobile() {
-    var userAgent = navigator.userAgent || navigator.vendor || window.opera;
-    var isTouchDevice = ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+var md = new MobileDetect(window.navigator.userAgent);
 
-    return isTouchDevice && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-}
-
-if (isMobile()) {
+if (md.mobile()) {
     document.getElementById('joystickContainer').classList.remove('hidden');
 
     var joystick = nipplejs.create({
         zone: document.getElementById('joystickContainer'),
         mode: 'static',
-        position: {
-            left: '50px',
-            bottom: '50px'
-        },
+        position: { left: '50px', bottom: '50px' },
         color: 'blue'
     });
 
