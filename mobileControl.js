@@ -1,12 +1,12 @@
 var md = new MobileDetect(window.navigator.userAgent);
 
 function isMobile() {
-    return md.mobile() !== null;
+    return md.mobile() !== null || md.tablet() !== null;
 }
 
 if (isMobile()) {
     document.getElementById('joystickContainer').classList.remove('hidden');
-
+    var keys = { 'w': false, 'a': false, 's': false, 'd': false };
     var joystick = nipplejs.create({
         zone: document.getElementById('joystickContainer'),
         mode: 'static',
@@ -58,6 +58,8 @@ if (isMobile()) {
             keys['s'] = false;
             keys['d'] = true;
         }
+
+        console.log(keys);
     });
 
     joystick.on('end', function() {
@@ -65,5 +67,6 @@ if (isMobile()) {
         keys['a'] = false;
         keys['s'] = false;
         keys['d'] = false;
+        console.log(keys);
     });
 }
