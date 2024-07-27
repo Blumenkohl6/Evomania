@@ -28,14 +28,120 @@ let player = {
     direction: 'down'
 }; // Startposition in der Mitte des Canvas
 
+const entities = {
+    plants: [],
+    creatures: []
+};
+
 // Bewegung des Spielers
 const keys = {};
 window.addEventListener('keydown', (e) => { keys[e.key] = true; });
 window.addEventListener('keyup', (e) => { keys[e.key] = false; });
 
+
+class Item {
+    constructor(name) {
+        this.name = name;
+    }
+}
+
+class Berry extends Item {
+    static name = "Berry";
+
+    constructor() {
+        super(Berry.name);
+    }
+
+    use() {
+        console.log("yummy");
+    }
+}
+
+class Entity {
+    x = 0;
+    y = 0;
+
+    name = '';
+    drops = [];
+
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+class Plant extends Entity {
+    spawnValue;
+    state = 0;
+
+    constructor(x, y) {
+        super(x, y);
+        entities.plants.push(this);
+    }
+}
+
+class BerryBush extends Plant {
+    static grafic = '/assets/grafik/entities/static/bush.png';
+    static img = document.createElement('img');
+    static width = 20;
+    static height = 20;
+    static name = 'berryBush';
+    static drops = [new Berry()];
+
+    constructor(x, y) {
+        const name = 'berryBush';
+        const drops = [new Berry()];
+        super(x, y, name, drops);
+        this.img = BerryBush.img;
+        this.width = BerryBush.width;
+        this.height = BerryBush.height;
+        this.name = BerryBush.name;
+        this.drops = BerryBush.drops;
+
+        if (!BerryBush.img.src) {
+            BerryBush.img.src = BerryBush.grafic;
+        }
+    }
+}
+
+class Creature extends Entity {
+    ox = 0;
+    oy = 0;
+
+    constructor(x, y, name, drops) {
+        super(x, y, name, drops);
+        this.ox = x;
+        this.oy = y;
+        entities.creatures.push(this);
+    }
+
+    move() {}
+}
+
+// Neue Methode zur Platzierung von Pflanzen
+function spawnPlants() {
+    const plantCount = 10; // Anzahl der Pflanzen, die wir spawnen möchten
+    const spawnRadius = 3; // Radius um den Spieler, in dem Pflanzen erscheinen können
+
+    for (let i = 0; i < plantCount; i++) {
+        // Bestimme die Position für die Pflanze basierend auf dem Seed
+        const baseSeed = Math.floor(Math.random() * 10000); // Basis-Seed für die Pflanze
+        const randomX = Math.floor(seededRandom(baseSeed + i) * spawnRadius * tileSize);
+        const randomY = Math.floor(seededRandom(baseSeed + i + 1) * spawnRadius * tileSize);
+
+        const spawnX = player.x + randomX - (spawnRadius * tileSize / 2);
+        const spawnY = player.y + randomY - (spawnRadius * tileSize / 2);
+
+        // Spawne eine neue BerryBush-Pflanze
+        new BerryBush(spawnX, spawnY);
+    }
+}
+
+// Rufe spawnPlants in der setup-Funktion auf
 function setup() {
     readUrl();
     preventSpawnTrap(true);
+    spawnPlants();
 }
 
 function preventSpawnTrap(first) {
@@ -293,6 +399,9 @@ function drawTile(type, x, y, tileX, tileY) {
 
 function generateTile(x, y) {
     const value = simplex.noise2D(x / 100, y / 100);
+
+
+
     if (value < -0.5) return 'water';
     if (value < -0.32) return 'sand';
     if (value < 0.5) return 'grass';
@@ -369,13 +478,37 @@ function drawPlayer() {
     ctx.drawImage(img, playerScreenX, playerScreenY, player.width, player.height);
 }
 
+function drawPlants() {
+    const screenWidth = canvas.width / scale;
+    const screenHeight = canvas.height / scale;
+
+    for (const plant of entities.plants) {
+        if (plant instanceof BerryBush) {
+            const plantScreenX = plant.x - player.x + screenWidth / 2;
+            const plantScreenY = plant.y - player.y + screenHeight / 2;
+
+            // Überprüfe, ob die Pflanze im Sichtfeld des Spielers ist
+            if (plantScreenX + plant.width > 0 && plantScreenX < screenWidth &&
+                plantScreenY + plant.height > 0 && plantScreenY < screenHeight) {
+
+                if (plant.img.complete) {
+                    ctx.drawImage(plant.img, plantScreenX, plantScreenY, plant.width * tileSize, plant.height * tileSize);
+                }
+            }
+        }
+    }
+}
+
+
 function gameLoop() {
     updatePlayerPosition();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawMap();
+    drawPlants();
     drawPlayer();
     requestAnimationFrame(gameLoop);
 }
+
 
 // Deaktivieren Sie die Bildglättung (Image Smoothing)
 ctx.imageSmoothingEnabled = false;

@@ -7,6 +7,7 @@
     <title>Evomania</title>
     <!--libraries-->
     <script src="https://cdn.jsdelivr.net/npm/simplex-noise@2.4.0/simplex-noise.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.8.0/nipplejs.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -18,13 +19,28 @@
             width: 100dvw;
             height: 100dvh;
         }
+        
+        #joystickContainer {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 100px;
+            height: 100px;
+        }
+        
+        #joystickContainer.hidden {
+            display: none;
+        }
     </style>
 </head>
 
 <body>
     <canvas id="canvas"></canvas>
 
+    <div id="joystickContainer" class="hidden"></div>
+
     <script src="main.js"></script>
+    <script src="mobileControl.js"></script>
 </body>
 
 </html>
