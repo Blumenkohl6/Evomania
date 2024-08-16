@@ -1,9 +1,19 @@
 var md = new MobileDetect(window.navigator.userAgent);
 
 function isMobile() {
-    var isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
-    return (md.mobile() !== null || md.tablet() !== null) || isTouchDevice;
+    if (
+        navigator.userAgent.match(/Android/i) || navigator.userAgent.match(/webOS/i) ||
+        navigator.userAgent.match(/iPhone/i) ||
+        navigator.userAgent.match(/iPad/i) ||
+        navigator.userAgent.match(/iPod/i) ||
+        navigator.userAgent.match(/BlackBerry/i) ||
+        navigator.userAgent.match(/Windows Phone/i)
+    )
+        return true;
+    else
+        return false;
 }
+
 
 if (isMobile()) {
     document.getElementById('joystickContainer').classList.remove('hidden');
@@ -13,7 +23,7 @@ if (isMobile()) {
         position: { left: '50px', bottom: '50px' },
         color: 'blue',
         size: 100,
-        restOpacity: 0.8
+        restOpacity: 0.7
     });
 
     joystick.on('move', function(evt, data) {
