@@ -20,7 +20,7 @@ if (isMobile()) {
     var joystick = nipplejs.create({
         zone: document.getElementById('joystickContainer'),
         mode: 'static',
-        position: { left: '50px', bottom: '50px' },
+        position: { left: '70px', bottom: '70px' },
         color: 'blue',
         size: 140,
         restOpacity: 0.7
