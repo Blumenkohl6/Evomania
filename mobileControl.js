@@ -22,7 +22,7 @@ if (isMobile()) {
         mode: 'static',
         position: { left: '50px', bottom: '50px' },
         color: 'blue',
-        size: 100,
+        size: 140,
         restOpacity: 0.7
     });
 
