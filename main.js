@@ -1,10 +1,9 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const tileSize = 25; // Tile-Größe
+const tileSize = 27; // Tile-Größe
 const amplitude = 1.5;
 const frequency = 0.5;
 const seed = Math.random(); // Zufälliger Seed
-let status = 0;
 
 let animationIndex = 0;
 
@@ -20,11 +19,11 @@ const simplex = new SimplexNoise(seed);
 let player = {
     x: canvas.width / 2 / scale,
     y: canvas.height / 2 / scale,
-    width: tileSize * 1.5,
-    height: tileSize * 3,
+    width: tileSize * 1.4,
+    height: tileSize * 2.7,
     speed: 0,
     maxSpeed: 4,
-    acceleration: 0.2,
+    acceleration: 0.15,
     direction: 'down'
 }; // Startposition in der Mitte des Canvas
 
@@ -38,110 +37,10 @@ const keys = {};
 window.addEventListener('keydown', (e) => { keys[e.key] = true; });
 window.addEventListener('keyup', (e) => { keys[e.key] = false; });
 
-
-class Item {
-    constructor(name) {
-        this.name = name;
-    }
-}
-
-class Berry extends Item {
-    static name = "Berry";
-
-    constructor() {
-        super(Berry.name);
-    }
-
-    use() {
-        console.log("yummy");
-    }
-}
-
-class Entity {
-    x = 0;
-    y = 0;
-
-    name = '';
-    drops = [];
-
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-    }
-}
-
-class Plant extends Entity {
-    spawnValue;
-    state = 0;
-
-    constructor(x, y) {
-        super(x, y);
-        entities.plants.push(this);
-    }
-}
-
-class BerryBush extends Plant {
-    static grafic = '/assets/grafik/entities/static/bush.png';
-    static img = document.createElement('img');
-    static width = 20;
-    static height = 20;
-    static name = 'berryBush';
-    static drops = [new Berry()];
-
-    constructor(x, y) {
-        const name = 'berryBush';
-        const drops = [new Berry()];
-        super(x, y, name, drops);
-        this.img = BerryBush.img;
-        this.width = BerryBush.width;
-        this.height = BerryBush.height;
-        this.name = BerryBush.name;
-        this.drops = BerryBush.drops;
-
-        if (!BerryBush.img.src) {
-            BerryBush.img.src = BerryBush.grafic;
-        }
-    }
-}
-
-class Creature extends Entity {
-    ox = 0;
-    oy = 0;
-
-    constructor(x, y, name, drops) {
-        super(x, y, name, drops);
-        this.ox = x;
-        this.oy = y;
-        entities.creatures.push(this);
-    }
-
-    move() {}
-}
-
-// Neue Methode zur Platzierung von Pflanzen
-function spawnPlants() {
-    const plantCount = 10; // Anzahl der Pflanzen, die wir spawnen möchten
-    const spawnRadius = 3; // Radius um den Spieler, in dem Pflanzen erscheinen können
-
-    for (let i = 0; i < plantCount; i++) {
-        // Bestimme die Position für die Pflanze basierend auf dem Seed
-        const baseSeed = Math.floor(Math.random() * 10000); // Basis-Seed für die Pflanze
-        const randomX = Math.floor(seededRandom(baseSeed + i) * spawnRadius * tileSize);
-        const randomY = Math.floor(seededRandom(baseSeed + i + 1) * spawnRadius * tileSize);
-
-        const spawnX = player.x + randomX - (spawnRadius * tileSize / 2);
-        const spawnY = player.y + randomY - (spawnRadius * tileSize / 2);
-
-        // Spawne eine neue BerryBush-Pflanze
-        new BerryBush(spawnX, spawnY);
-    }
-}
-
 // Rufe spawnPlants in der setup-Funktion auf
 function setup() {
     readUrl();
     preventSpawnTrap(true);
-    spawnPlants(); // Pflanzen spawnen, nachdem der Spieler positioniert wurde
 }
 
 function preventSpawnTrap(first) {
@@ -397,16 +296,48 @@ function drawTile(type, x, y, tileX, tileY) {
     }
 }
 
+const vegetation = {
+    'bush': 'assets/grafik/entities/static/bush.png'
+};
+
+function loadVegetation() {
+    for (plant in vegetation) {
+        let img = document.createElement('img');
+        img.src = vegetation[plant];
+        vegetation[plant] = img;
+    }
+}
+
+loadVegetation();
+
+function drawVegetation(type, x, y) {
+    if (type == null) return;
+    ctx.drawImage(vegetation[type], x, y, tileSize, tileSize);
+}
+
+const chances = { //in Promille
+    'bush': 3
+};
+
 function generateTile(x, y) {
     const value = simplex.noise2D(x / 100, y / 100);
-
-
 
     if (value < -0.5) return 'water';
     if (value < -0.32) return 'sand';
     if (value < 0.5) return 'grass';
     return 'mountain';
 }
+
+function generateVegetation(x, y) {
+    const value = simplex.noise2D(x / 100, y / 100);
+    const randomValue = seededRandom(x * 10000 + y + seed) * 1000;
+
+    if (value < -0.5) return null;
+    if (value < -0.32) return null;
+    if (value < 0.5) return (Math.floor(randomValue) < chances['bush']) ? 'bush' : null;
+    return null;
+}
+
 
 function drawMap() {
     // Setze die Hintergrundfarbe
@@ -429,9 +360,11 @@ function drawMap() {
     for (let y = startY; y <= endY; y++) {
         for (let x = startX; x <= endX; x++) {
             const tileType = generateTile(x, y);
+            const vegType = generateVegetation(x, y);
             const screenX = (x - startX) * tileSize * scale - offsetX;
             const screenY = (y - startY) * tileSize * scale - offsetY;
             drawTile(tileType, screenX / scale, screenY / scale, x, y);
+            drawVegetation(vegType, screenX / scale, screenY / scale, x, y)
         }
     }
 }
@@ -478,21 +411,10 @@ function drawPlayer() {
     ctx.drawImage(img, playerScreenX, playerScreenY, player.width, player.height);
 }
 
-function drawPlants() {
-    for (const plant of entities.plants) {
-        if (plant instanceof BerryBush) {
-            const plantScreenX = plant.x - player.x + canvas.width / 2 / scale;
-            const plantScreenY = plant.y - player.y + canvas.height / 2 / scale;
-            ctx.drawImage(plant.img, plantScreenX * tileSize, plantScreenY / tileSize, plant.width / tileSize, plant.height * tileSize);
-        }
-    }
-}
-
 function gameLoop() {
     updatePlayerPosition();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawMap();
-    drawPlants();
     drawPlayer();
     requestAnimationFrame(gameLoop);
 }
