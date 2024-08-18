@@ -7,6 +7,23 @@ const seed = Math.random(); // Zufälliger Seed
 
 let animationIndex = 0;
 
+let lightLevel = 1;
+let weather = 0;
+/*
+time    lightLevel 
+21-4        1
+19-21       10-1
+4-6         1-10
+6-19        10
+
+Weather
+1 //few clouds      -1
+2 //more clouds     -2
+3 //complete clouds -3
+4 //rain            -4
+5 //storm           -5
+*/
+
 // Set high resolution for canvas
 const scale = 2; // Adjust scale factor as needed
 canvas.width = canvas.clientWidth * scale;
@@ -107,7 +124,7 @@ function applyTimeOfDayFilter() {
         } else { // Tiefe Nacht (21:00 - 4:00 Uhr)
             alpha = maxAlpha; // Konstante Dunkelheit in der Nacht
         }
-
+        console.log(alpha);
         color = `rgba(0, 0, 0, ${alpha})`;
     }
 
@@ -506,8 +523,23 @@ function drawPlayer() {
     ctx.drawImage(img, playerScreenX, playerScreenY, player.width, player.height);
 }
 
+function updateLightlevel() {
+    if (time.hours > 21 && time.hours < 4) lightLevel = 1;
+    else if (time.hours == 4) lightLevel = 2;
+    else if (time.hours == 5) lightLevel = 4;
+    else if (time.hours == 6) lightLevel = 8;
+    else if (time.hours > 6 && time.hours < 19) lightLevel = 10;
+    else if (time.hours == 19) lightLevel = 9
+    else if (time.hours == 20) lightLevel = 7;
+    else lightLevel = 3; //time.hours == 21
+
+    lightLevel -= weather;
+    if (lightLevel < 0) lightLevel = 0;
+}
+
 function gameLoop() {
     updateTime();
+    updateLightlevel();
     updatePlayerPosition();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawMap();
