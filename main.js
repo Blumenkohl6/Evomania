@@ -15,7 +15,6 @@ ctx.scale(scale, scale);
 
 const simplex = new SimplexNoise(seed);
 
-// Spielerposition (als Fließkommazahlen)
 let player = {
     x: canvas.width / 2 / scale,
     y: canvas.height / 2 / scale,
@@ -24,12 +23,13 @@ let player = {
     speed: 0,
     maxSpeed: 4,
     acceleration: 0.15,
-    direction: 'down'
-}; // Startposition in der Mitte des Canvas
+    direction: 'down',
+    inv: []
+};
 
 const entities = {
-    plants: [],
-    creatures: []
+    plants: {},
+    creatures: {}
 };
 
 // Bewegung des Spielers
@@ -62,6 +62,63 @@ function preventSpawnTrap(first) {
 function readUrl() {}
 
 setup();
+
+let time = {
+    hours: 6, // Startzeit 6:00 Uhr morgens
+    minutes: 0,
+    days: 1,
+    timeScale: 6 * 60 / 60, // Verhältnis von Echtzeit zu Spielzeit (6h in 60 Sekunden)
+    lastUpdate: Date.now() // Startzeit für die Zeitberechnung
+};
+
+function updateTime() {
+    const now = Date.now();
+    const delta = (now - time.lastUpdate) / 1000; // Vergangene Zeit in Sekunden
+    time.lastUpdate = now;
+
+    // Aktualisiere die Spielzeit basierend auf dem Delta und dem timeScale
+    const gameMinutesPassed = delta * time.timeScale;
+    time.minutes += gameMinutesPassed;
+
+    // Update Stunden und Tage, wenn nötig
+    if (time.minutes >= 60) {
+        time.hours += Math.floor(time.minutes / 60);
+        time.minutes %= 60; // Rest-Minuten nach Stundenanpassung
+
+        if (time.hours >= 24) {
+            time.days += Math.floor(time.hours / 24);
+            time.hours %= 24; // Rest-Stunden nach Tagesanpassung
+        }
+    }
+}
+
+function applyTimeOfDayFilter() {
+    let color;
+    const timeOfDay = time.hours + time.minutes / 60; // Exakte Zeit in Dezimalform (z.B. 6.5 für 6:30 Uhr)
+    const maxAlpha = 0.5; // Maximale Dunkelheit der Nacht
+
+    if (timeOfDay >= 19 || timeOfDay < 6) { // Nacht oder Übergänge zur/von Nacht (19:00 - 7:00 Uhr)
+        let alpha = 0;
+
+        if (timeOfDay >= 19 && timeOfDay < 21) { // Übergang von Abend zu Nacht (19:00 - 21:00 Uhr)
+            alpha = (timeOfDay - 19) / 2 * maxAlpha; // Sanfter Übergang mit maxAlpha-Begrenzung
+        } else if (timeOfDay >= 5 && timeOfDay < 7) { // Übergang von Nacht zu Morgen (5:00 - 7:00 Uhr)
+            alpha = (6 - timeOfDay) / 2 * maxAlpha; // Sanfter Übergang mit maxAlpha-Begrenzung
+        } else { // Tiefe Nacht (21:00 - 4:00 Uhr)
+            alpha = maxAlpha; // Konstante Dunkelheit in der Nacht
+        }
+
+        color = `rgba(0, 0, 0, ${alpha})`;
+    }
+
+    if (color) {
+        ctx.save();
+        ctx.globalAlpha = 1; // Setze globale Alpha auf 1, da wir den Alpha-Wert in der Farbe selbst steuern
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+    }
+}
 
 function updatePlayerPosition() {
     let moveX = 0;
@@ -300,6 +357,8 @@ const vegetation = {
     'bush': 'assets/grafik/entities/static/bush.png'
 };
 
+const vegetationSizeFactor = 1.8;
+
 function loadVegetation() {
     for (plant in vegetation) {
         let img = document.createElement('img');
@@ -312,11 +371,37 @@ loadVegetation();
 
 function drawVegetation(type, x, y) {
     if (type == null) return;
-    ctx.drawImage(vegetation[type], x, y, tileSize, tileSize);
+    registerEntity(type, x, y);
+    ctx.drawImage(vegetation[type], x, y - tileSize / 4, tileSize * vegetationSizeFactor, tileSize * vegetationSizeFactor);
+}
+
+function generateGenome() {
+    return {
+        attractivity: 0,
+        reproduction: 1,
+        growth: 1,
+        edibility: 0
+    };
+}
+
+function registerEntity(type, screenX, screenY) {
+    const x = player.x + (screenX - canvas.width / 2);
+    const y = player.y + (screenY - canvas.height / 2);
+
+    if (vegetation[type] != undefined) { //plant
+        if (!entities.plants[x + "-" + y]) entities.plants[x + "-" + y] = {};
+        if (entities.plants[x + "-" + y][type] != undefined) return;
+        entities.plants[x + "-" + y][type] = {
+            genome: generateGenome(),
+            state: 0
+        };
+    } else if (creatures[type] != undefined) { //creature
+
+    }
 }
 
 const chances = { //in Promille
-    'bush': 3
+    'bush': 3.5
 };
 
 function generateTile(x, y) {
@@ -327,6 +412,8 @@ function generateTile(x, y) {
     if (value < 0.5) return 'grass';
     return 'mountain';
 }
+
+generateTile();
 
 function generateVegetation(x, y) {
     const value = simplex.noise2D(x / 100, y / 100);
@@ -356,14 +443,22 @@ function drawMap() {
     const offsetX = (player.x % tileSize) * scale;
     const offsetY = (player.y % tileSize) * scale;
 
-    // Berechnung für Tiles basierend auf den aktuellen Start- und Endpunkten
+    // Tiles zeichen
     for (let y = startY; y <= endY; y++) {
         for (let x = startX; x <= endX; x++) {
             const tileType = generateTile(x, y);
-            const vegType = generateVegetation(x, y);
             const screenX = (x - startX) * tileSize * scale - offsetX;
             const screenY = (y - startY) * tileSize * scale - offsetY;
             drawTile(tileType, screenX / scale, screenY / scale, x, y);
+        }
+    }
+
+    // Vegetation zeichnen
+    for (let y = startY; y <= endY; y++) {
+        for (let x = startX; x <= endX; x++) {
+            const vegType = generateVegetation(x, y);
+            const screenX = (x - startX) * tileSize * scale - offsetX;
+            const screenY = (y - startY) * tileSize * scale - offsetY;
             drawVegetation(vegType, screenX / scale, screenY / scale, x, y)
         }
     }
@@ -412,10 +507,12 @@ function drawPlayer() {
 }
 
 function gameLoop() {
+    updateTime();
     updatePlayerPosition();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawMap();
     drawPlayer();
+    applyTimeOfDayFilter();
     requestAnimationFrame(gameLoop);
 }
 
