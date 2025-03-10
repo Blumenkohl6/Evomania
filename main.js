@@ -25,8 +25,8 @@ let player = {
     width: tileSize * 1.4,
     height: tileSize * 2.7,
     speed: 0,
-    maxSpeed: 4,
-    acceleration: 0.15,
+    maxSpeed: 4.4,
+    acceleration: 0.2,
     direction: 'down',
     inv: []
 };
@@ -74,7 +74,7 @@ const simplex = new SimplexNoise(seed);
 
 let animationIndex = 0;
 let amplitude = 1.5;
-let frequency = 0.5;
+let frequency = 0.4;
 
 let lightLevel = 1;
 let weather = 0;
@@ -246,8 +246,8 @@ function updatePlayerPosition() {
     const newY = player.y + moveY;
 
     // Prüfen, ob die Tile passierbar ist
-    const tileX = Math.floor(newX / tileSize);
-    const tileY = Math.floor(newY / tileSize);
+    const tileX = Math.floor(newX / tileSize) - 4;
+    const tileY = Math.floor(newY / tileSize) - 3;
     const tileType = generateTile(tileX, tileY);
 
     if (tileType !== 'mountain' && tileType !== 'water') {
