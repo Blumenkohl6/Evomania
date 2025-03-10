@@ -26,8 +26,8 @@ Weather
 
 // Set high resolution for canvas
 const scale = 2; // Adjust scale factor as needed
-canvas.width = canvas.clientWidth * scale;
-canvas.height = canvas.clientHeight * scale;
+canvas.width = (canvas.clientWidth + 100) * scale;
+canvas.height = (canvas.clientHeight + 100) * scale;
 ctx.scale(scale, scale);
 
 const simplex = new SimplexNoise(seed);
@@ -49,6 +49,11 @@ const entities = {
     creatures: {}
 };
 
+// Hilfsfunktion, um den Modulo immer positiv zu erhalten
+function mod(n, m) {
+    return ((n % m) + m) % m;
+}
+
 // Bewegung des Spielers
 const keys = {};
 window.addEventListener('keydown', (e) => { keys[e.key] = true; });
@@ -61,8 +66,9 @@ function setup() {
 }
 
 function preventSpawnTrap(first) {
-    const tileX = player.x / tileSize - 4;
-    const tileY = player.y / tileSize - 3;
+    const tileX = Math.floor(player.x / tileSize);
+    const tileY = Math.floor(player.y / tileSize);
+
     const tileType = generateTile(tileX, tileY);
 
     if (tileType == 'mountain' || tileType == 'water') {
@@ -102,9 +108,21 @@ function updateTime() {
         time.hours += Math.floor(time.minutes / 60);
         time.minutes %= 60; // Rest-Minuten nach Stundenanpassung
 
+        growth();
+
         if (time.hours >= 24) {
             time.days += Math.floor(time.hours / 24);
             time.hours %= 24; // Rest-Stunden nach Tagesanpassung
+        }
+    }
+}
+
+function growth() {
+    for (entitykind in entities) {
+        for (object in entities[entitykind]) {
+            for (entity in entities[entitykind][object]) {
+                entities[entitykind][object][entity].state++;
+            }
         }
     }
 }
@@ -124,7 +142,7 @@ function applyTimeOfDayFilter() {
         } else { // Tiefe Nacht (21:00 - 4:00 Uhr)
             alpha = maxAlpha; // Konstante Dunkelheit in der Nacht
         }
-        console.log(alpha);
+
         color = `rgba(0, 0, 0, ${alpha})`;
     }
 
@@ -166,15 +184,14 @@ function updatePlayerPosition() {
         player.speed = 0;
     }
 
-
-
     // Berechne neue Positionen
     const newX = player.x + moveX;
     const newY = player.y + moveY;
 
     // Prüfe Kollisionen
-    const tileX = newX / tileSize - 4;
-    const tileY = newY / tileSize - 3;
+    const tileX = Math.floor(newX / tileSize);
+    const tileY = Math.floor(newY / tileSize);
+
     const tileType = generateTile(tileX, tileY);
 
     if (tileType !== 'mountain' && tileType !== 'water') {
@@ -346,7 +363,7 @@ function drawTile(type, x, y, tileX, tileY) {
             ctx.fillStyle = '#2F4F4F';
             break;
     }
-    ctx.fillRect(x, y, tileSize, tileSize);
+    ctx.fillRect(x, y, tileSize + 1, tileSize + 1);
 
     // Holen Sie sich alle Details für diese Kachel
     const details = getRandomDetails(type, tileX, tileY);
@@ -371,7 +388,14 @@ function drawTile(type, x, y, tileX, tileY) {
 }
 
 const vegetation = {
-    'bush': 'assets/grafik/entities/static/bush.png'
+    'bush-0': 'assets/grafik/entities/static/bush-0.png',
+    'bush-1': 'assets/grafik/entities/static/bush-1.png',
+    'bush-2': 'assets/grafik/entities/static/bush-2.png',
+    'bush-3': 'assets/grafik/entities/static/bush-3.png'
+};
+
+const creatures = {
+
 };
 
 const vegetationSizeFactor = 1.8;
@@ -389,7 +413,8 @@ loadVegetation();
 function drawVegetation(type, x, y) {
     if (type == null) return;
     registerEntity(type, x, y);
-    ctx.drawImage(vegetation[type], x, y - tileSize / 4, tileSize * vegetationSizeFactor, tileSize * vegetationSizeFactor);
+    console.log(entities["plants"][x + "-" + y]);
+    ctx.drawImage(vegetation[type + "-0"], x, y - tileSize / 4, tileSize * vegetationSizeFactor, tileSize * vegetationSizeFactor);
 }
 
 function generateGenome() {
@@ -397,7 +422,10 @@ function generateGenome() {
         attractivity: 0,
         reproduction: 1,
         growth: 1,
-        edibility: 0
+        edibility: 0,
+        constancy: 1,
+        foodWaterRatio: 1 / 2,
+        lifespan: 0
     };
 }
 
@@ -406,12 +434,15 @@ function registerEntity(type, screenX, screenY) {
     const y = player.y + (screenY - canvas.height / 2);
 
     if (vegetation[type] != undefined) { //plant
-        if (!entities.plants[x + "-" + y]) entities.plants[x + "-" + y] = {};
-        if (entities.plants[x + "-" + y][type] != undefined) return;
-        entities.plants[x + "-" + y][type] = {
+        if (!entities["plants"][x + "-" + y]) entities["plants"][x + "-" + y] = {};
+        if (entities["plants"][x + "-" + y][type] != undefined) return;
+        console.log(entities["plants"][x + "-" + y]);
+        entities["plants"][x + "-" + y][type] = {
             genome: generateGenome(),
-            state: 0
+            state: 0,
+            timeStamp: time.hours + time.days * 24,
         };
+        console.log(entities["plants"][x + "-" + y][type]);
     } else if (creatures[type] != undefined) { //creature
 
     }
@@ -442,7 +473,6 @@ function generateVegetation(x, y) {
     return null;
 }
 
-
 function drawMap() {
     // Setze die Hintergrundfarbe
     ctx.fillStyle = '#000'; // z.B. Schwarz als Hintergrund
@@ -457,10 +487,11 @@ function drawMap() {
     const endX = startX + Math.ceil(canvas.width / tileSize / scale) + 2 * extraTiles;
     const endY = startY + Math.ceil(canvas.height / tileSize / scale) + 2 * extraTiles;
 
-    const offsetX = (player.x % tileSize) * scale;
-    const offsetY = (player.y % tileSize) * scale;
+    // Hier wird statt % nun die mod()-Funktion verwendet, um immer einen positiven Offset zu erhalten
+    const offsetX = mod(player.x, tileSize) * scale;
+    const offsetY = mod(player.y, tileSize) * scale;
 
-    // Tiles zeichen
+    // Tiles zeichnen
     for (let y = startY; y <= endY; y++) {
         for (let x = startX; x <= endX; x++) {
             const tileType = generateTile(x, y);
@@ -476,7 +507,7 @@ function drawMap() {
             const vegType = generateVegetation(x, y);
             const screenX = (x - startX) * tileSize * scale - offsetX;
             const screenY = (y - startY) * tileSize * scale - offsetY;
-            drawVegetation(vegType, screenX / scale, screenY / scale, x, y)
+            drawVegetation(vegType, screenX / scale, screenY / scale, x, y);
         }
     }
 }
@@ -529,7 +560,7 @@ function updateLightlevel() {
     else if (time.hours == 5) lightLevel = 4;
     else if (time.hours == 6) lightLevel = 8;
     else if (time.hours > 6 && time.hours < 19) lightLevel = 10;
-    else if (time.hours == 19) lightLevel = 9
+    else if (time.hours == 19) lightLevel = 9;
     else if (time.hours == 20) lightLevel = 7;
     else lightLevel = 3; //time.hours == 21
 
@@ -547,7 +578,6 @@ function gameLoop() {
     applyTimeOfDayFilter();
     requestAnimationFrame(gameLoop);
 }
-
 
 // Deaktivieren Sie die Bildglättung (Image Smoothing)
 ctx.imageSmoothingEnabled = false;
