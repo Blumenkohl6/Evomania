@@ -440,8 +440,8 @@ function registerEntity(type, screenX, screenY) {
     const x = player.x + (screenX - (canvasLogicalWidth / 2));
     const y = player.y + (screenY - (canvasLogicalHeight / 2));
 
-    if (vegetation[type] !== undefined) { // Plant
-        const key = x + "-" + y;
+    if (vegetation[type + "-0"] !== undefined) { // Plant
+        const key = Math.floor(x) + "-" + Math.floor(y);
         if (!entities["plants"][key]) {
             entities["plants"][key] = {};
         }
@@ -457,16 +457,20 @@ function registerEntity(type, screenX, screenY) {
     }
 }
 
-function drawVegetation(type, x, y) {
+function drawVegetation(type, pX, pY) {
     if (type == null) return;
-    registerEntity(type, x, y);
+    registerEntity(type, pX, pY);
 
-    // x,y sind hier logische Zeichenkoordinaten
-    // "bush-0" etc. existiert in vegetation
+    // Berechne Weltkoordinaten anhand der übergebenen Bildschirmkoordinaten (pX, pY)
+    const worldX = player.x + (pX - (canvasLogicalWidth / 2));
+    const worldY = player.y + (pY - (canvasLogicalHeight / 2));
+    const key = Math.floor(worldX) + "-" + Math.floor(worldY);
+
+    // Zeichne die Pflanze an der Bildschirmposition pX, pY
     ctx.drawImage(
-        vegetation[type + "-0"],
-        x,
-        y - tileSize / 4,
+        vegetation[type + "-" + entities["plants"][key][type].state],
+        pX,
+        pY - tileSize / 4,
         tileSize * vegetationSizeFactor,
         tileSize * vegetationSizeFactor
     );
